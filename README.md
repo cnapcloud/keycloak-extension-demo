@@ -12,7 +12,7 @@ OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비�
 3. [Keycloak React 데모](#3-keycloak-react-데모)
 4. [Admin Console](#4-admin-console)
 5. [환경 변수 설정](#5-환경-변수-설정)
-6. [Make 명령어 레퍼런스](#6-make-명령어-레퍼런스)
+6. [Make 명령어](#6-make-명령어)
 7. [참고 자료](#7-참고-자료)
 
 ---
@@ -25,7 +25,7 @@ Docker Desktop만 설치되어 있으면 됩니다.
 make up
 ```
 
-처음 실행하면 Keycloak 기동까지 **2~3분** 정도 걸립니다. 기다리는 동안 내부적으로 이런 일이 벌어집니다.
+처음 실행하면 Keycloak 기동까지 **2~3분** 정도 걸립니다. 기다리는 동안 내부적으로 다음과 같은 작업이 진행됩니다.
 
 ```
 postgres      → DB 준비
@@ -49,7 +49,7 @@ keycloak-cli  → cnap Realm 생성 + 초기 관리자 계정 등록
 | **Mailhog** | http://localhost:8025 | 발송된 이메일 확인 |
 | **RabbitMQ** | http://localhost:15672 | 사용자 이벤트 메시지 확인 (`admin` / `password`) |
 | **User Storage** | http://localhost:8090 | 외부 사용자 저장소 REST API |
-| **User Storage DB** | http://localhost:8090/h2-console | H2 DB 스키마·데이터 조회 |
+| **User Storage DB** | http://localhost:8090/h2-console | H2 DB 스키마·데이터 조회 (`JDBC URL: jdbc:h2:mem:testdb` / `sa` / `password`) |
 
 ---
 
@@ -77,6 +77,10 @@ http://localhost:5173 을 열면 실제 로그인 화면이 나옵니다.
 
 > Admin Console → **Identity Providers** 에서 카카오·네이버 OAuth Client ID 및 Secret을 설정한 후에만 사용할 수 있습니다.
 > 설정 방법은 [docs/02-installation.md](docs/02-installation.md) 10절을 참고하세요.
+
+1. 로그인 화면에서 **카카오** 또는 **네이버** 버튼 클릭
+2. 각 소셜 서비스 OAuth 인증 완료
+3. 가입 시 사용한 이메일과 일치하는 계정과 자동 연동
 
 ### 회원가입
 
