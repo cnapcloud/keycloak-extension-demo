@@ -4,7 +4,7 @@
 OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비스에서 자주 활용되는 기능들을 빠르게 구성하고 동작을 확인할 수 있도록 구성되어 있습니다.
 
 설치 없이 바로 체험하려면 CNAPCloud의 [GitOps 대시보드](https://cnapcloud.com/gitops/) 로그인 페이지에서 동일한 구성을 확인할 수 있습니다.
-로그인 후 [Keycloak React 데모](https://react-keycloak.cnapcloud.com)에 접속하면 SSO로 바로 연결되는 것도 확인할 수 있습니다. 서비스 운영 시간은 **09:30 ~ 21:00 KST**입니다.
+로그인 후 [Keycloak React 데모](https://react-keycloak.cnapcloud.com)에 접속하면 SSO로 바로 연결되는 것도 확인할 수 있습니다. 이 서비스의 운영 시간은 **09:30 ~ 21:00 KST**입니다.
 
 ---
 
@@ -200,7 +200,7 @@ http://localhost:8080 → **Administration Console** → Realm: **`cnap`**
 
 ## 5. Docker Compose 구성
 
-구성 파일은 [docker/compose.yaml](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docker/compose.yaml)에 있습니다.
+compose 구성 파일은 [docker/compose.yaml](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docker/compose.yaml)에 있습니다.
 
 ### 서비스 구성
 
