@@ -25,7 +25,7 @@ Docker Desktop만 설치되어 있으면 됩니다.
 make up
 ```
 
-처음 실행하면 Keycloak 기동까지 **2~3분** 정도 걸립니다. 기다리는 동안 내부적으로 다음과 같은 작업이 진행됩니다.
+처음 실행 시 Keycloak 기동까지 **약 2~3분**이 소요됩니다. 이 시간 동안 내부적으로 다음과 같은 작업이 순차적으로 진행됩니다.
 
 ```
 postgres      → DB 준비
@@ -36,6 +36,9 @@ keycloak-cli  → cnap Realm 생성 + 초기 관리자 계정 등록
 ```
 
 준비가 완료되면 아래 주소들로 접속할 수 있습니다.
+
+> 설치 없이 바로 체험하려면 CNAPCloud의 [GitOps 대시보드](https://cnapcloud.com/gitops/) 로그인 페이지에서 동일한 구성을 확인할 수 있습니다.
+> 여기서 로그인 후, [Keycloak React 데모](https://react-keycloak.cnapcloud.com)에 접속하면 SSO로 바로 연결되는 것도 확인할 수 있습니다.
 
 ---
 
@@ -49,7 +52,7 @@ keycloak-cli  → cnap Realm 생성 + 초기 관리자 계정 등록
 | **Mailhog** | http://localhost:8025 | 발송된 이메일 확인 |
 | **RabbitMQ** | http://localhost:15672 | 사용자 이벤트 메시지 확인 (`admin` / `password`) |
 | **User Storage** | http://localhost:8090 | 외부 사용자 저장소 REST API |
-| **User Storage DB** | http://localhost:8090/h2-console | H2 DB 스키마·데이터 조회 (`JDBC URL: jdbc:h2:mem:testdb` / `sa` / `password`) |
+| **User Storage DB** | http://localhost:8090/h2-console | H2 DB 스키마·데이터 조회<br>JDBC URL: `jdbc:h2:mem:testdb`<br>ID: `sa` / PW: `password` |
 
 ---
 
@@ -58,6 +61,7 @@ keycloak-cli  → cnap Realm 생성 + 초기 관리자 계정 등록
 http://localhost:5173 을 열면 실제 로그인 화면이 나옵니다.
 
 > 개발 환경에서는 OTP 입력란에 **`000000`** 을 입력하면 항상 통과됩니다. (`OTP_DEV_MODE=true`)
+> 이메일로 OTP를 전송한 경우, [Mailhog](http://localhost:8025) 수신함에서 확인한 번호를 사용할 수도 있습니다.
 
 ### 로그인
 
@@ -68,25 +72,27 @@ http://localhost:5173 을 열면 실제 로그인 화면이 나옵니다.
 ### 간편인증 (KG Inicis)
 
 1. 로그인 화면에서 **간편인증** 버튼 클릭
-2. Mock 서버(http://localhost:9091)로 이동해 인증
-3. 완료되면 동일 전화번호로 가입된 계정과 자동 연동
+2. Mock 서버(http://localhost:9091) 인증 페이지로 이동
+3. 사용자(홍기동) 선택 후 **인증 성공** 버튼 클릭
+4. 동일 전화번호로 가입된 계정(admin)과 연계 확인 후 **연계 추가** 클릭
+5. 로그인 완료
 
-> 간편인증은 신규 가입이 아닙니다. 먼저 일반 회원가입을 하고 나서 연동하는 흐름입니다.
+> 간편인증은 이미 가입된 사용자와 연동하는 흐름입니다. 먼저 일반 회원가입을 완료한 후 연동하세요.
 
 ### 카카오 / 네이버 로그인
 
 > Admin Console → **Identity Providers** 에서 카카오·네이버 OAuth Client ID 및 Secret을 설정한 후에만 사용할 수 있습니다.
-> 설정 방법은 [docs/02-installation.md](docs/02-installation.md) 10절을 참고하세요.
+> 설정 방법은 [docs/02-installation.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/02-installation.md) 10절을 참고하세요.
 
 1. 로그인 화면에서 **카카오** 또는 **네이버** 버튼 클릭
 2. 각 소셜 서비스 OAuth 인증 완료
-3. 가입 시 사용한 이메일과 일치하는 계정과 자동 연동
+3. 가입 시 사용한 이메일과 일치하는 계정에 자동 연동
 
 ### 회원가입
 
 1. 약관 동의 (필수 / 선택 구분)
 2. 아이디 · 이메일 · 전화번호 · 비밀번호 입력
-3. 이메일 또는 SMS OTP 인증 (개발 환경: `000000`)
+3. 이메일 또는 SMS OTP 인증
 
 ### ID 찾기
 
@@ -138,7 +144,8 @@ http://localhost:8080 → **Administration Console** → Realm: **`cnap`**
 - `user-event-publisher` — 사용자 생성·수정·삭제 이벤트를 RabbitMQ로 발행
 - `metrics-listener` — Keycloak 이벤트를 Prometheus 메트릭으로 노출
 
-RabbitMQ 관리 UI(http://localhost:15672)에서 실시간으로 메시지가 쌓이는 걸 볼 수 있습니다.
+> RabbitMQ에서 사용자 변경 이벤트를 수신하려면 [RabbitMQ 관리 UI](http://localhost:15672)에 `admin` / `password` 로 로그인합니다.
+> `user.account` 큐를 생성하고, exchange에 `user.account.*` 라우팅 키로 바인딩하면 모든 사용자 관련 메시지가 `user.account` 큐로 수신됩니다.
 
 ### User Federation
 
@@ -160,7 +167,7 @@ RabbitMQ 관리 UI(http://localhost:15672)에서 실시간으로 메시지가 �
 
 ```
 docker/terms-content/
-  {realm}/
+  cnap/
     1.0/ko/
       service.html
       privacy_required.html
@@ -208,13 +215,13 @@ make ps                      # 서비스 상태 확인
 
 | 문서 | 내용 |
 |---|---|
-| [docs/01-features.md](docs/01-features.md) | 주요 기능 소개 |
-| [docs/02-installation.md](docs/02-installation.md) | SPI 상세 설치 및 Admin Console 설정 가이드 |
-| [docs/03-user_guide.md](docs/03-user_guide.md) | 사용자 가이드 |
-| [docs/04-developer_guide.md](docs/04-developer_guide.md) | 개발자 가이드 |
-| [docs/05-dormant-account-test-runbook.md](docs/05-dormant-account-test-runbook.md) | 휴면 계정 테스트 런북 |
-| [docs/06-usp-integration-guide.md](docs/06-usp-integration-guide.md) | User Storage REST API 연동 가이드 |
-| [docs/07-terms-guide.md](docs/07-terms-guide.md) | 이용약관 운영 가이드 |
+| [docs/01-features.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/01-features.md) | 주요 기능 소개 |
+| [docs/02-installation.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/02-installation.md) | SPI 상세 설치 및 Admin Console 설정 가이드 |
+| [docs/03-user_guide.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/03-user_guide.md) | 사용자 가이드 |
+| [docs/04-developer_guide.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/04-developer_guide.md) | 개발자 가이드 |
+| [docs/05-dormant-account-test-runbook.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/05-dormant-account-test-runbook.md) | 휴면 계정 테스트 런북 |
+| [docs/06-usp-integration-guide.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/06-usp-integration-guide.md) | User Storage REST API 연동 가이드 |
+| [docs/07-terms-guide.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/07-terms-guide.md) | 이용약관 운영 가이드 |
 
 ### 관련 저장소
 
