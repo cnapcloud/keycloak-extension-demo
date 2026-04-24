@@ -1,7 +1,7 @@
 # Keycloak Extension Demo
 
-로컬에서 Keycloak SPI 확장 기능을 직접 체험해볼 수 있는 데모 환경입니다.
-OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비스에서 자주 필요한 기능들을 Docker Compose로 간편하게 실행할 수 있습니다.
+로컬 환경에서 Keycloak SPI 확장 기능을 손쉽게 실행하고 검증할 수 있는 데모 프로젝트입니다.
+OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비스에서 자주 활용되는 기능들을 빠르게 구성하고 동작을 확인할 수 있도록 구성되어 있습니다.
 
 ---
 
@@ -229,4 +229,4 @@ make ps                      # 서비스 상태 확인
 |---|---|
 | [cnapcloud/keycloak-user-storage](https://github.com/cnapcloud/keycloak-user-storage) | 외부 User Storage REST API 구현체 |
 | [cnapcloud/react-keycloak-demo](https://github.com/cnapcloud/react-keycloak-demo) | React 인증 데모 앱 |
-| [cnapcloud/inicis-mock-server](https://github.com/cnapcloud/inicis-mock-server) | 이니시스 간편인증 Mock 서버 |
+| [cnapcloud/inicis-mockup-server](https://github.com/cnapcloud/inicis-mockup-server) | 이니시스 간편인증 Mock 서버 |
