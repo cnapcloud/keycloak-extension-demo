@@ -222,8 +222,8 @@ compose 구성 파일은 [docker/compose.yaml](https://github.com/cnapcloud/keyc
 
 ```
 postgres ──────────────────────────┐
-keycloak-init ─────────────────────┼──→ keycloak ──────────┐
-                                                            ├──→ keycloak-cli
+keycloak-init ─────────────────────+──→ keycloak ──────────┐
+                                                           ├──→ keycloak-cli
 keycloak-user-storage ─────────────────────────────────────┘
 
 rabbitmq / mailhog / react-keycloak-demo / inicis-mock-server   (독립 기동)
@@ -308,4 +308,4 @@ make ps                      # 서비스 상태 확인
 |---|---|
 | [cnapcloud/keycloak-user-storage](https://github.com/cnapcloud/keycloak-user-storage) | 외부 User Storage REST API 구현체 |
 | [cnapcloud/react-keycloak-demo](https://github.com/cnapcloud/react-keycloak-demo) | React 인증 데모 앱 |
-| [cnapcloud/inicis-mockup-server](https://github.com/cnapcloud/inicis-mockup-server) | 이니시스 간편인증 Mock 서버 |
+| [cnapcloud/inicis-mock-server](https://github.com/cnapcloud/inicis-mockup-server) | 이니시스 간편인증 Mock 서버 |
