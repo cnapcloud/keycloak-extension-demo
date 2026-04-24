@@ -1,7 +1,7 @@
-# Keycloak Extension Demo — 시작하기
+# Keycloak Extension Demo
 
 로컬에서 Keycloak SPI 확장 기능을 직접 체험해볼 수 있는 데모 환경입니다.
-OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비스에서 자주 필요한 기능들을 Docker 한 방으로 띄워볼 수 있습니다.
+OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비스에서 자주 필요한 기능들을 Docker Compose로 간편하게 실행할 수 있습니다.
 
 ---
 
@@ -176,7 +176,7 @@ docker/terms-content/
 
 ---
 
-## 6. Make 명령어 레퍼런스
+## 6. Make 명령어
 
 ```bash
 make up                      # 전체 서비스 시작 (백그라운드)
