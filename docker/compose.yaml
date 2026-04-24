@@ -1,0 +1,191 @@
+services:
+  postgres:
+      image: postgres:16
+      restart: always
+      volumes:
+        - ./data/postgres16:/var/lib/postgresql/data
+      environment:
+        postgres: keycloak
+        POSTGRES_USER: ${POSTGRES_USER:-keycloak}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-keycloak} -d keycloak"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+
+  keycloak-init:
+    image: cnapcloud/keycloak-extensions-spi:26.5.2-3
+    entrypoint: ""
+    command: ["sh", "-c", "echo 'Copying Keycloak Extensions SPI JAR...' && cp /resources/spi/keycloak-extensions-spi-1.0.0-SNAPSHOT.jar /providers/ && cp /resources/spi/keycloak-metrics-spi-7.0.0.jar /providers/"]
+    restart: "no"
+    volumes:
+      - providers:/providers
+
+  keycloak:
+      # build: .
+      restart: on-failure:5
+      image: quay.io/keycloak/keycloak:26.5.2
+      environment:
+        JAVA_OPTS: -Xms1024m -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=*:8000
+#        _JAVA_OPTIONS: -XX:UseSVE=0
+        KC_LOG_LEVEL: info 
+        KC_DB: postgres
+        KC_DB_URL: 'jdbc:postgresql://postgres/keycloak'
+        KC_DB_USERNAME: ${POSTGRES_USER:-keycloak}
+        KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+        KC_DB_SCHEMA: public
+        KC_HOSTNAME: ${KC_HOSTNAME:-http://localhost:8080}
+        KC_HTTP_ENABLED: true
+        KC_PROXY_HEADERS: xforwarded
+        KC_METRICS_ENABLED: true
+        KC_HEALTH_ENABLED: true
+        KEYCLOAK_ADMIN: admin
+        KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-password}
+        KC_SPI_DEPLOYMENTS_SCANNER_ENABLED: false
+        KC_SPI_DEPLOYMENTS_SCANNER_INTERVAL: 10
+        OTP_DEV_MODE: 'true'
+        OTP_CODE_LIFESPAN_SECONDS: '300'
+        OTP_RATE_LIMIT_MAX_ATTEMPTS: '5'
+        OTP_RATE_LIMIT_LOCKOUT_MINUTES: '30'        
+        SMS_PROVIDER: aws_sns_x # aws_sns_x → fallback to default (dummy). use 'aws_sns' for real SMS
+        SMS_SENDER: 821012345678
+        SMS_AWS_ACCESS_KEY: ${SMS_AWS_ACCESS_KEY}
+        SMS_AWS_SECRET_KEY: ${SMS_AWS_SECRET_KEY}
+        SMS_AWS_REGION: us-east-1        
+        USER_EVENT_CHANNEL: rabbitmq
+        RABBITMQ_HOST: rabbitmq
+        RABBITMQ_USERNAME: ${RABBITMQ_USER:-admin}
+        RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-password}
+        TERMS_CONTENT_DIR: /opt/keycloak/terms-content
+      command: start --metrics-enabled=true --health-enabled=true --hostname-strict=false --http-enabled=true # start --optimized for production
+      ports:
+        - '8080:8080'
+        - '9000:9000'
+        - '8000:8000'
+        - '9091:9091'
+      volumes:
+        - providers:/opt/keycloak/providers
+        - ./terms-content:/opt/keycloak/terms-content
+      healthcheck:
+        test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+        interval: 15s
+        timeout: 5s
+        retries: 10
+        start_period: 120s
+      depends_on:
+        postgres:
+          condition: service_healthy
+        keycloak-init:
+          condition: service_completed_successfully
+
+  keycloak-cli:
+    image: quay.io/keycloak/keycloak:26.5.2
+    entrypoint: ""
+    restart: "no"
+    command:
+      - sh
+      - -c
+      - |
+        /opt/keycloak/bin/kcadm.sh config credentials \
+          --server http://keycloak:8080 \
+          --realm master \
+          --user ${KEYCLOAK_ADMIN:-admin} \
+          --password ${KEYCLOAK_ADMIN_PASSWORD:-password}
+        /opt/keycloak/bin/kcadm.sh update realms/master -s sslRequired=none
+        /opt/keycloak/bin/kcadm.sh get realms/cnap > /dev/null 2>&1 \
+          && echo 'Realm cnap already exists, skipping.' \
+          || /opt/keycloak/bin/kcadm.sh create realms -f /config/realm-export.json
+        /opt/keycloak/bin/kcadm.sh update realms/cnap -s sslRequired=none
+        if ! /opt/keycloak/bin/kcadm.sh get users -r cnap -q username=admin | grep -q admin; then
+          /opt/keycloak/bin/kcadm.sh create users -r cnap \
+            -s username=admin \
+            -s email=admin@cnapcloud.com \
+            -s enabled=true \
+            -s firstName=admin \
+            -s lastName=system \
+            -s 'attributes.phoneNumber=["+821012345678"]'
+          /opt/keycloak/bin/kcadm.sh set-password -r cnap --username admin --new-password password
+          /opt/keycloak/bin/kcadm.sh add-roles -r cnap --uusername admin --rolename default-roles-cnap
+          echo 'User admin created in cnap realm.'
+        else
+          echo 'User admin already exists, skipping.'
+        fi
+    volumes:
+      - ./config:/config
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      keycloak-user-storage:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-password}
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    restart: unless-stopped
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak-user-storage:
+    image: cnapcloud/keycloak-user-storage:0.0.1
+    restart: unless-stopped
+    environment:
+      PROFILE: dev
+    ports:
+      - "8090:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  react-keycloak-demo:
+    image: cnapcloud/react-keycloak-demo:0.0.1
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_REALM: cnap
+      KEYCLOAK_AUTH_SERVER_URL: http://localhost:8080
+      KEYCLOAK_CLIENT_ID: react
+      API_BASE_URL: /api
+      API_BACKEND_URL: https://httpbin.org/
+      NGINX_ACCESS_LOG: /dev/stdout
+
+    ports:
+      - "5173:80"
+
+  inicis-mock-server:
+    image: cnapcloud/inicis-mock-server:1.0.0
+    restart: unless-stopped
+    network_mode: "service:keycloak"
+    environment:
+      SERVER_PORT: 9091
+
+volumes:
+  providers:
+
+
+  
