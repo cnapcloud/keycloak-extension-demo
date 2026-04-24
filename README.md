@@ -3,6 +3,9 @@
 로컬 환경에서 Keycloak SPI 확장 기능을 손쉽게 실행하고 검증할 수 있는 데모 프로젝트입니다.
 OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비스에서 자주 활용되는 기능들을 빠르게 구성하고 동작을 확인할 수 있도록 구성되어 있습니다.
 
+설치 없이 바로 체험하려면 CNAPCloud의 [GitOps 대시보드](https://cnapcloud.com/gitops/) 로그인 페이지에서 동일한 구성을 확인할 수 있습니다.
+로그인 후 [Keycloak React 데모](https://react-keycloak.cnapcloud.com)에 접속하면 SSO로 바로 연결되는 것도 확인할 수 있습니다. 서비스 운영 시간은 **09:30 ~ 21:00 KST**입니다.
+
 ---
 
 ## 목차
@@ -11,9 +14,10 @@ OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비�
 2. [서비스 접속 URL](#2-서비스-접속-url)
 3. [Keycloak React 데모](#3-keycloak-react-데모)
 4. [Admin Console](#4-admin-console)
-5. [환경 변수 설정](#5-환경-변수-설정)
-6. [Make 명령어](#6-make-명령어)
-7. [참고 자료](#7-참고-자료)
+5. [Docker Compose 구성](#5-docker-compose-구성)
+6. [환경 변수 설정](#6-환경-변수-설정)
+7. [Make 명령어](#7-make-명령어)
+8. [참고 자료](#8-참고-자료)
 
 ---
 
@@ -22,6 +26,8 @@ OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비�
 Docker Desktop만 설치되어 있으면 됩니다.
 
 ```bash
+git clone https://github.com/cnapcloud/keycloak-extension-demo.git
+cd keycloak-extension-demo
 make up
 ```
 
@@ -32,13 +38,10 @@ postgres      → DB 준비
 keycloak-init → SPI JAR 복사
 keycloak      → 서버 기동
 keycloak-cli  → cnap Realm 생성 + 초기 관리자 계정 등록
-그 외          → rabbitmq, mailhog, user-storage, react-demo, inicis-mock
+그 외          → rabbitmq, mailhog, keycloak-user-storage, react-keycloak-demo, inicis-mock-server
 ```
 
 준비가 완료되면 아래 주소들로 접속할 수 있습니다.
-
-> 설치 없이 바로 체험하려면 CNAPCloud의 [GitOps 대시보드](https://cnapcloud.com/gitops/) 로그인 페이지에서 동일한 구성을 확인할 수 있습니다.
-> 여기서 로그인 후, [Keycloak React 데모](https://react-keycloak.cnapcloud.com)에 접속하면 SSO로 바로 연결되는 것도 확인할 수 있습니다.
 
 ---
 
@@ -107,7 +110,7 @@ http://localhost:5173 을 열면 실제 로그인 화면이 나옵니다.
 
 ### 사용자 프로파일
 
-로그인 후 계정 페이지에서 `phoneNumber`, `otpMethod` 같은 커스텀 속성을 확인하고 수정할 수 있습니다.
+로그인 후 계정 페이지에서 커스텀 속성을 확인하고 수정할 수 있습니다. 속성 목록은 [Admin Console → 사용자 프로파일](#사용자-프로파일-user-profile)을 참고하세요.
 
 ---
 
@@ -161,9 +164,81 @@ http://localhost:8080 → **Administration Console** → Realm: **`cnap`**
 
 소셜 로그인은 기존 계정과의 **연동** 방식으로 동작합니다. 이메일(카카오·네이버) 또는 전화번호(이니시스)로 가입된 계정을 찾아 자동으로 연결합니다.
 
-### 이용약관 설정
+### 테마 (Theme)
 
-약관 콘텐츠는 아래 경로의 HTML 파일로 관리합니다.
+**Realm Settings → Themes** 에서 로그인·계정 화면의 테마를 설정합니다.
+
+| 항목 | 기본값 | 설명 |
+|---|---|---|
+| Login theme | `keycloak.ext-dark` | 로그인·회원가입·OTP 등 인증 화면 |
+| Account theme | (기본값) | 사용자 계정 관리 페이지 |
+| Admin theme | (기본값) | Admin Console |
+| Email theme | `keycloak.ext` | 발송 이메일 템플릿 |
+
+### 다국어 (Localization)
+
+**Realm Settings → Localization** 에서 지원 언어와 기본 언어를 설정합니다.
+
+- **Internationalization**: `Enabled`
+- **Supported locales**: `ko`, `en`
+- **Default locale**: `ko`
+
+### 사용자 프로파일 (User Profile)
+
+**Realm Settings → User profile** 에서 커스텀 속성을 확인하고 편집할 수 있습니다.
+
+| 속성 | 설명 |
+|---|---|
+| `phoneNumber` | 전화번호 — OTP 및 간편인증 연동에 사용 |
+| `otpMethod` | OTP 수신 방식 (`sms` / `email`) |
+| `termsAgreed` | 필수 약관 동의 여부 |
+| `marketingAgreed` | 마케팅 수신 동의 여부 |
+| `lastLoginDate` | 마지막 로그인 일시 (`last-login-tracker` 자동 갱신) |
+| `dormant` | 휴면 계정 여부 (`dormant-account-scheduler` 자동 설정) |
+
+---
+
+## 5. Docker Compose 구성
+
+구성 파일은 [docker/compose.yaml](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docker/compose.yaml)에 있습니다.
+
+### 서비스 구성
+
+| 서비스 | 포트 | 역할 |
+|---|---|---|
+| `postgres` | — | Keycloak DB |
+| `keycloak-init` | — | SPI JAR를 Keycloak 컨테이너로 복사 |
+| `keycloak` | 8080, 9000, 8000 | Keycloak 서버 (HTTP / Health / Debug) |
+| `keycloak-cli` | — | cnap Realm 생성 및 초기 관리자 계정 등록 |
+| `rabbitmq` | 5672, 15672 | 사용자 이벤트 메시지 브로커 (AMQP / Management UI) |
+| `mailhog` | 1025, 8025 | 이메일 수신 Mock (SMTP / Web UI) |
+| `keycloak-user-storage` | 8090 | 외부 User Storage REST API (H2 in-memory DB) |
+| `react-keycloak-demo` | 5173 | React 인증 데모 앱 |
+| `inicis-mock-server` | 9091 | 이니시스 간편인증 Mock 서버 (keycloak 네트워크 공유) |
+
+### 기동 순서
+
+`depends_on` 조건에 따라 아래 순서로 기동됩니다. 처음 실행 시 Keycloak이 완전히 뜨기까지 **약 2~3분**이 소요됩니다.
+
+```
+postgres ──────────────────────────┐
+keycloak-init ─────────────────────┼──→ keycloak ──────────┐
+                                                            ├──→ keycloak-cli
+keycloak-user-storage ─────────────────────────────────────┘
+
+rabbitmq / mailhog / react-keycloak-demo / inicis-mock-server   (독립 기동)
+```
+
+### 볼륨 및 설정 파일
+
+| 경로 | 설명 |
+|---|---|
+| `docker/compose.yaml` | 서비스 전체 구성 |
+| `docker/config/realm-export.json` | cnap Realm 초기 설정 (keycloak-cli가 import) |
+| `docker/terms-content/` | 이용약관 HTML 파일 (Realm / 버전 / 언어 경로 구조) |
+| `docker/data/` | 런타임 데이터 (postgres, rabbitmq 영속성) |
+
+약관 파일은 수정 후 Keycloak을 재시작하면 반영됩니다.
 
 ```
 docker/terms-content/
@@ -173,13 +248,17 @@ docker/terms-content/
       privacy_required.html
       privacy_optional.html
       marketing.html
+    2026-04-10/ko/
+      service.html
+    2026-04-11/ko/
+      service.html
 ```
 
 ---
 
-## 5. 환경 변수 설정
+## 6. 환경 변수 설정
 
-[docker/compose.yaml](docker/compose.yaml) `keycloak` 서비스의 `environment` 블록입니다.
+[docker/compose.yaml](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docker/compose.yaml) `keycloak` 서비스의 `environment` 블록입니다.
 
 | 변수 | 기본값 | 설명 |
 |---|---|---|
@@ -192,7 +271,7 @@ docker/terms-content/
 
 ---
 
-## 6. Make 명령어
+## 7. Make 명령어
 
 ```bash
 make up                      # 전체 서비스 시작 (백그라운드)
@@ -209,7 +288,7 @@ make ps                      # 서비스 상태 확인
 
 ---
 
-## 7. 참고 자료
+## 8. 참고 자료
 
 ### 문서
 
