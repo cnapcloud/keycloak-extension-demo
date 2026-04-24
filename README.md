@@ -73,6 +73,11 @@ http://localhost:5173 을 열면 실제 로그인 화면이 나옵니다.
 
 > 간편인증은 신규 가입이 아닙니다. 먼저 일반 회원가입을 하고 나서 연동하는 흐름입니다.
 
+### 카카오 / 네이버 로그인
+
+> Admin Console → **Identity Providers** 에서 카카오·네이버 OAuth Client ID 및 Secret을 설정한 후에만 사용할 수 있습니다.
+> 설정 방법은 [docs/02-installation.md](docs/02-installation.md) 10절을 참고하세요.
+
 ### 회원가입
 
 1. 약관 동의 (필수 / 선택 구분)
