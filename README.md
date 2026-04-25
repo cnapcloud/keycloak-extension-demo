@@ -189,18 +189,18 @@ http://localhost:8080 → **Administration Console** → Realm: **`cnap`**
 
 **Realm Settings → User profile** 에서 커스텀 속성을 확인하고 편집할 수 있습니다.
 
-**User Profile 스키마 등록 속성** (`Realm Settings → User profile`)
+**User Profile 스키마 등록 속성**
 
 | 속성 | 필수 | 설명 |
 |---|---|---|
-| `username` | — | 아이디 |
-| `email` | user | 이메일 |
-| `firstName` | user | 이름 |
-| `lastName` | user | 성 |
-| `phoneNumber` | — | 전화번호 — OTP 및 간편인증 연동에 사용 |
-| `otpMethod` | — | OTP 수신 방식 (`sms` / `email`), select 입력 |
+| `username` | ✓ | 아이디 |
+| `email` | ✓ | 이메일 |
+| `firstName` | ✓ | 이름 |
+| `lastName` | ✓ | 성 |
+| `phoneNumber` | ✓ | 전화번호 — OTP 및 간편인증 연동에 사용 |
+| `otpMethod` | ✓ | OTP 수신 방식 (`SMS` / `EMAIL` / `SKIP`), select 입력 |
 
-**SPI 확장이 런타임에 직접 설정하는 속성** (User Profile 스키마 미등록)
+**SPI 확장이 런타임에 직접 설정하는 속성** 
 
 | 속성 | 설정 주체 | 설명 |
 |---|---|---|
