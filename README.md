@@ -1,7 +1,9 @@
 # Keycloak Extension Demo
 
-로컬 환경에서 Keycloak SPI 확장 기능을 손쉽게 실행하고 검증할 수 있는 데모 프로젝트입니다.
-OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비스에서 자주 활용되는 기능들을 빠르게 구성하고 동작을 확인할 수 있도록 구성되어 있습니다.
+Keycloak은 오픈소스 IAM(Identity and Access Management) 솔루션으로, 로그인·회원가입·소셜 연동 등 인증 인프라를 별도 구현 없이 빠르게 구축할 수 있도록 지원합니다. 그러나 실제 서비스에서는 ID 찾기, SMS OTP, 간편인증, 약관 동의, 휴면 계정 관리와 같은 기능이 필수적으로 요구되며, 이는 기본 제공 범위를 넘어서는 영역이기 때문에 SPI(Service Provider Interface)를 통한 확장이 필요합니다.
+
+<!--more-->
+이 프로젝트에서는 Keycloak 26.5를 기반으로 이미 개발된 SPI를 활용해 데모 환경을 구성하고, 확장된 인증 흐름에서 제공되는 다양한 기능과 그 구성 방법에 대해 살펴봅니다.
 
 설치 없이 바로 체험하려면 CNAPCloud의 [GitOps 대시보드](https://cnapcloud.com/gitops/) 로그인 페이지에서 동일한 구성을 확인할 수 있습니다.
 로그인 후 [Keycloak React 데모](https://react-keycloak.cnapcloud.com)에 접속하면 SSO로 바로 연결되는 것도 확인할 수 있습니다. 이 서비스의 운영 시간은 **09:30 ~ 21:00 KST**입니다.
@@ -14,7 +16,7 @@ OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비�
 2. [서비스 접속 URL](#2-서비스-접속-url)
 3. [Keycloak React 데모](#3-keycloak-react-데모)
 4. [Admin Console](#4-admin-console)
-5. [Docker Compose 구성](#5-docker-compose-구성)
+5. [데모 환경 구성](#5-데모-환경-구성)
 6. [환경 변수 설정](#6-환경-변수-설정)
 7. [Make 명령어](#7-make-명령어)
 8. [참고 자료](#8-참고-자료)
@@ -23,7 +25,7 @@ OTP 인증, 간편인증, 약관 동의, 휴면 계정 관리 등 실제 서비�
 
 ## 1. 실행 방법
 
-Docker Desktop만 설치되어 있으면 됩니다.
+데모 환경은 Docker Desktop만 설치되어 있으면 별도의 추가 설정 없이 실행할 수 있습니다. 본 예제는 MacOS 환경에서 Docker Desktop 4.67.0 버전 기준으로 검증되었습니다.
 
 ```bash
 git clone https://github.com/cnapcloud/keycloak-extension-demo.git
@@ -85,7 +87,7 @@ http://localhost:5173 을 열면 실제 로그인 화면이 나옵니다.
 ### 카카오 / 네이버 로그인
 
 > Admin Console → **Identity Providers** 에서 카카오·네이버 OAuth Client ID 및 Secret을 설정한 후에만 사용할 수 있습니다.
-> 설정 방법은 [docs/02-installation.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/02-installation.md) 10절을 참고하세요.
+> 설정 방법은 [설치 가이드](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/02-installation.md) 10절을 참고하세요.
 
 1. 로그인 화면에서 **카카오** 또는 **네이버** 버튼 클릭
 2. 각 소셜 서비스 OAuth 인증 완료
@@ -187,20 +189,31 @@ http://localhost:8080 → **Administration Console** → Realm: **`cnap`**
 
 **Realm Settings → User profile** 에서 커스텀 속성을 확인하고 편집할 수 있습니다.
 
-| 속성 | 설명 |
-|---|---|
-| `phoneNumber` | 전화번호 — OTP 및 간편인증 연동에 사용 |
-| `otpMethod` | OTP 수신 방식 (`sms` / `email`) |
-| `termsAgreed` | 필수 약관 동의 여부 |
-| `marketingAgreed` | 마케팅 수신 동의 여부 |
-| `lastLoginDate` | 마지막 로그인 일시 (`last-login-tracker` 자동 갱신) |
-| `dormant` | 휴면 계정 여부 (`dormant-account-scheduler` 자동 설정) |
+**User Profile 스키마 등록 속성** (`Realm Settings → User profile`)
+
+| 속성 | 필수 | 설명 |
+|---|---|---|
+| `username` | — | 아이디 |
+| `email` | user | 이메일 |
+| `firstName` | user | 이름 |
+| `lastName` | user | 성 |
+| `phoneNumber` | — | 전화번호 — OTP 및 간편인증 연동에 사용 |
+| `otpMethod` | — | OTP 수신 방식 (`sms` / `email`), select 입력 |
+
+**SPI 확장이 런타임에 직접 설정하는 속성** (User Profile 스키마 미등록)
+
+| 속성 | 설정 주체 | 설명 |
+|---|---|---|
+| `termsAgreed` | `Terms and Marketing Consent` | 필수 약관 동의 여부 |
+| `marketingAgreed` | `Terms and Marketing Consent` | 마케팅 수신 동의 여부 |
+| `lastLoginDate` | `last-login-tracker` | 마지막 로그인 일시 (자동 갱신) |
+| `dormant` | `dormant-account-scheduler` | 휴면 계정 여부 (자동 설정) |
 
 ---
 
-## 5. Docker Compose 구성
+## 5. 데모 환경 구성
 
-compose 구성 파일은 [docker/compose.yaml](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docker/compose.yaml)에 있습니다.
+전체 데모 환경은 Docker Compose 기반으로 구성되어 있으며, 각 서비스는 인증 흐름, 메시지 처리, 외부 연동, 그리고 데모 UI까지 포함한 통합 실행 환경을 제공합니다. 구성 파일은 [compose.yaml](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docker/compose.yaml)에서 확인할 수 있습니다.
 
 ### 서비스 구성
 
@@ -218,7 +231,7 @@ compose 구성 파일은 [docker/compose.yaml](https://github.com/cnapcloud/keyc
 
 ### 기동 순서
 
-`depends_on` 조건에 따라 아래 순서로 기동됩니다. 처음 실행 시 Keycloak이 완전히 뜨기까지 **약 2~3분**이 소요됩니다.
+데모 환경의 서비스는 `depends_on` 조건에 따라 아래 순서로 기동됩니다. 처음 실행 시 Keycloak이 완전히 뜨기까지 **약 2~3분**이 소요됩니다.
 
 ```
 postgres ──────────────────────────┐
@@ -258,7 +271,7 @@ docker/terms-content/
 
 ## 6. 환경 변수 설정
 
-[docker/compose.yaml](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docker/compose.yaml) `keycloak` 서비스의 `environment` 블록입니다.
+compose.yaml 파일에서 keycloak 서비스는 컨테이너 실행 시 필요한 설정값을 environment 블록으로 전달하도록 구성되어 있습니다. 해당 설정을 통해 Keycloak의 초기 관리자 계정, 데이터베이스 연결, 그리고 OTP 및 이벤트 처리와 같은 인증 관련 주요 동작 옵션들이 정의됩니다. 아래는 이 중 일부 핵심 설정입니다.
 
 | 변수 | 기본값 | 설명 |
 |---|---|---|
@@ -272,6 +285,8 @@ docker/terms-content/
 ---
 
 ## 7. Make 명령어
+
+데모 환경은 Docker Compose를 기반으로 여러 서비스를 함께 실행하므로, 개발 및 테스트 편의성을 위해 Makefile을 통해 주요 작업을 간단하게 수행할 수 있도록 구성되어 있습니다.
 
 ```bash
 make up                      # 전체 서비스 시작 (백그라운드)
@@ -290,22 +305,20 @@ make ps                      # 서비스 상태 확인
 
 ## 8. 참고 자료
 
-### 문서
+데모 환경 구성과 기능 이해를 돕기 위해 관련 문서와 연계 저장소를 함께 제공합니다. 각 문서는 SPI 기반 확장 기능, 설치 및 설정, 사용자/개발자 가이드 등 역할별로 분리되어 있습니다.
 
-| 문서 | 내용 |
-|---|---|
-| [docs/01-features.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/01-features.md) | 주요 기능 소개 |
-| [docs/02-installation.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/02-installation.md) | SPI 상세 설치 및 Admin Console 설정 가이드 |
-| [docs/03-user_guide.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/03-user_guide.md) | 사용자 가이드 |
-| [docs/04-developer_guide.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/04-developer_guide.md) | 개발자 가이드 |
-| [docs/05-dormant-account-test-runbook.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/05-dormant-account-test-runbook.md) | 휴면 계정 테스트 런북 |
-| [docs/06-usp-integration-guide.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/06-usp-integration-guide.md) | User Storage REST API 연동 가이드 |
-| [docs/07-terms-guide.md](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/07-terms-guide.md) | 이용약관 운영 가이드 |
+### 가이드
+
+- [주요 기능 소개](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/01-features.md)
+- [SPI 상세 설치 및 Admin Console 설정 가이드](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/02-installation.md)
+- [사용자 가이드](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/03-user_guide.md)
+- [개발자 가이드](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/04-developer_guide.md)
+- [휴면 계정 테스트 런북](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/05-dormant-account-test-runbook.md)
+- [User Storage REST API 연동 가이드](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/06-usp-integration-guide.md)
+- [이용약관 운영 가이드](https://github.com/cnapcloud/keycloak-extension-demo/blob/main/docs/07-terms-guide.md)
 
 ### 관련 저장소
 
-| 저장소 | 설명 |
-|---|---|
-| [cnapcloud/keycloak-user-storage](https://github.com/cnapcloud/keycloak-user-storage) | 외부 User Storage REST API 구현체 |
-| [cnapcloud/react-keycloak-demo](https://github.com/cnapcloud/react-keycloak-demo) | React 인증 데모 앱 |
-| [cnapcloud/inicis-mock-server](https://github.com/cnapcloud/inicis-mockup-server) | 이니시스 간편인증 Mock 서버 |
+- [외부 User Storage REST API 구현체](https://github.com/cnapcloud/keycloak-user-storage)
+- [React 인증 데모 앱](https://github.com/cnapcloud/react-keycloak-demo)
+- [이니시스 간편인증 Mock 서버](https://github.com/cnapcloud/inicis-mockup-server)
